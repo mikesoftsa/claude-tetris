@@ -82,6 +82,12 @@ jobs:
             Publica UN comentario en ESPAÑOL con esta estructura exacta usando:
               gh issue comment ${{ github.event.issue.number }} --body "..."
 
+            El cuerpo del comentario DEBE estar escrito en Markdown compatible con GitHub
+            (GFM - GitHub Flavored Markdown): usa ## para encabezados, ** para negrita,
+            ` para código inline, ``` para bloques de código, - para listas no ordenadas,
+            1. para listas ordenadas, y > para citas si aplica. No uses HTML ni formatos
+            que GitHub no renderice correctamente en comentarios de issues.
+
             ```
             ## 🔍 Diagnóstico automático
 
