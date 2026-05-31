@@ -1,0 +1,110 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write      # requerido para añadir labels y publicar comentarios
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Ensure standard labels exist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          create_label() {
+            gh label create "$1" --color "$2" --description "$3" --force
+          }
+          # Categorías
+          create_label "bug"             "d73a4a" "Algo no funciona como se espera"
+          create_label "enhancement"     "a2eeef" "Nueva funcionalidad o mejora"
+          create_label "gameplay"        "0e8a16" "Mecánicas de juego: piezas, rotación, líneas, scoring"
+          create_label "ui"              "fbca04" "Apariencia, estilos, canvas, layout"
+          create_label "performance"     "d4c5f9" "Rendimiento o velocidad de render/lógica"
+          create_label "audio"           "c5def5" "Sonido (Web Audio API)"
+          create_label "controls"        "bfdadc" "Controles de teclado o táctiles"
+          create_label "documentation"   "0075ca" "Documentación / CLAUDE.md"
+          # Prioridad
+          create_label "prioridad:alta"  "b60205" "Urgente o bloqueante"
+          create_label "prioridad:media" "e4e669" "Importante, no bloqueante"
+          create_label "prioridad:baja"  "c2e0c6" "Menor o cosmético"
+          # Fallback
+          create_label "needs-triage"    "ededed" "Pendiente de clasificación manual"
+
+      - name: Run Claude issue triage
+        id: claude-triage
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Herramientas permitidas: solo lectura del repo + operaciones sobre el issue
+          claude_args: >-
+            --allowed-tools
+            "Read,Glob,Grep,
+            Bash(gh issue view:*),
+            Bash(gh issue edit:*),
+            Bash(gh issue comment:*),
+            Bash(gh label list:*)"
+          prompt: |
+            Eres el asistente de triage del repositorio ${{ github.repository }}.
+            Es un juego de Tetris en JavaScript vanilla. Arquitectura relevante (leer CLAUDE.md):
+            - game.js  → toda la lógica (tablero, piezas, física, render, input)
+            - index.html → canvas y DOM
+            - style.css  → estilos retro arcade
+
+            Tu tarea es analizar el issue #${{ github.event.issue.number }} y realizar DOS acciones:
+
+            === PASO 1 — Leer el issue ===
+            Ejecuta: gh issue view ${{ github.event.issue.number }}
+            Si el issue menciona áreas técnicas concretas, también puedes leer CLAUDE.md y/o
+            buscar en game.js para ubicar el código afectado.
+
+            === PASO 2 — Asignar labels ===
+            Elige SOLO del siguiente set (una categoría + una prioridad):
+              Categorías: bug, enhancement, gameplay, ui, performance, audio, controls, documentation
+              Prioridad:  prioridad:alta, prioridad:media, prioridad:baja
+              Fallback:   needs-triage  (si no hay suficiente información para clasificar)
+
+            Aplica los labels con:
+              gh issue edit ${{ github.event.issue.number }} --add-label "LABEL1,LABEL2"
+
+            === PASO 3 — Publicar diagnóstico ===
+            Publica UN comentario en ESPAÑOL con esta estructura exacta usando:
+              gh issue comment ${{ github.event.issue.number }} --body "..."
+
+            ```
+            ## 🔍 Diagnóstico automático
+
+            **Resumen**
+            <qué se reporta o pide, en 1-2 frases>
+
+            **Tipo y prioridad**
+            - Labels asignados: `<label1>`, `<label2>`
+            - Justificación: <por qué esos labels>
+
+            **Área afectada**
+            - Archivos/funciones probables: <p.ej. `game.js` → `tryRotate()`, `clearLines()`>
+
+            **Causa probable / análisis**
+            <hipótesis técnica concisa>
+
+            **Pasos sugeridos para la solución**
+            1. <paso accionable>
+            2. <paso accionable>
+            3. …
+
+            ---
+            *Diagnóstico generado automáticamente por Claude. Revisa y ajusta antes de implementar.*
+            ```
+
+            Sé técnico y conciso. NO implementes ningún cambio de código.
