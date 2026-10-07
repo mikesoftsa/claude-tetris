@@ -25,12 +25,31 @@ body {
 
 .game-title {
   font-family: 'Courier New', Courier, monospace;
-  font-size: 36px;
+  font-size: clamp(32px, 9vw, 48px);
   font-weight: 900;
-  letter-spacing: 10px;
+  letter-spacing: clamp(4px, 2vw, 10px);
   color: #7aa2f7;
   text-shadow: 0 0 20px rgba(122, 162, 247, 0.5);
   text-align: center;
+}
+
+.game-title span:nth-child(1) { color: #f25f5c; }
+.game-title span:nth-child(2) { color: #ff9f43; }
+.game-title span:nth-child(3) { color: #f7d154; }
+.game-title span:nth-child(4) { color: #6bcf7f; }
+.game-title span:nth-child(5) { color: #4cc9f0; }
+.game-title span:nth-child(6) { color: #b388ff; }
+
+header {
+  text-align: center;
+}
+
+.game-subtitle {
+  margin-top: 4px;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #555570;
 }
 
 .game-container {
